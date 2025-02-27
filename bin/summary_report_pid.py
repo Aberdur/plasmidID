@@ -361,19 +361,34 @@ def summary_to_html_group(group_folder, html_template):
 def summary_to_tab_group(group_folder):
     group = group_folder.split("/")[-1]
     tab_filename = os.path.join(group_folder, group + '_final_results.tab')
+    tab_summary_filename = os.path.join(group_folder, group + '_final_results_per_sample.tab')
     individual_files = []
     for root, _, files in os.walk(group_folder):
         for name in files:
             if name.endswith("final_results.tab"):
                 individual_files.append(os.path.join(root, name))
+
+    if not individual_files:
+        print("No individual files were found.")
+        return
+    
     individual_dfs = []
+    individual_dfs_per_sample = []
 
     for file in individual_files:
         sample = file.split('/')[-1].replace('_final_results.tab', '')
         df = pd.read_csv(file, sep='\t')
-        df.drop(['contig_name', 'images'], axis = 1, inplace=True)
-        df.rename(columns={'fraction_covered':'Fr_cov_' + sample, 'percentage':'Map%_' + sample}, inplace=True)
-        individual_dfs.append(df)
+
+        df_merged = df.copy()
+        df_merged.drop(columns=['contig_name', 'images'], axis=1, inplace=True, errors='ignore')
+        df_merged.rename(columns={'fraction_covered': f'Fr_cov_{sample}', 'percentage': f'Map%_{sample}'}, inplace=True)
+        individual_dfs.append(df_merged)
+
+        df_sample = df.copy()
+        df_sample.drop(columns=['contig_name', 'images'], axis=1, inplace=True, errors='ignore')
+        df_sample.insert(0, 'sample', sample)
+        df_sample.rename(columns={'percentage': '% Mapping'}, inplace=True)
+        individual_dfs_per_sample.append(df_sample)
 
     dfm = individual_dfs[0]
     for df_ in individual_dfs[1:]:
@@ -392,6 +407,11 @@ def summary_to_tab_group(group_folder):
     dfm = dfm.sort_values(by=['N','length'], ascending=[False,False]).reset_index(drop=True)
 
     dfm.to_csv(tab_filename, sep='\t', index=False)
+
+    df_per_sample = pd.concat(individual_dfs_per_sample, ignore_index=True, sort=False)
+    df_per_sample.fillna('-', inplace=True)
+
+    df_per_sample.to_csv(tab_summary_filename, sep='\t', index=False)
 
     return
 
