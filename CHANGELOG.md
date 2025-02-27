@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.6dev - 2025-02-27
+### Added
+- Add results per sample to summary_report_pid.py [#29] (https://github.com/BU-ISCIII/plasmidID/pull/29)
+### Fixed
+
+
 ## 1.6.4 - 2021-03-2020
 ### Added
 - Updated Dockerfile
